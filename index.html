@@ -20,23 +20,26 @@
         }
 
         h1 {
-            color: #ffffff; font-size: 1.8rem;
+            color: #ffffff; font-size: 1.7rem;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
             font-weight: 900; margin-bottom: 15px;
         }
 
         #sub-title {
-            color: #ffffff; font-size: 1.2rem; font-weight: bold;
+            color: #ffffff; font-size: 1.1rem; font-weight: bold;
             text-shadow: 1px 1px 5px rgba(0,0,0,0.4);
             min-height: 60px;
         }
 
+        /* STRICT FIXED BUTTON SIZE */
         #prank-btn {
-            padding: 18px 40px; font-size: 1.3rem; font-weight: bold;
+            width: 180px; height: 60px; /* Fixed dimensions */
+            font-size: 1.2rem; font-weight: bold;
             background-color: #000; color: #FFD700;
             border: none; border-radius: 50px;
             cursor: pointer; position: absolute;
             z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex; justify-content: center; align-items: center;
             touch-action: manipulation;
         }
 
@@ -52,7 +55,7 @@
             text-shadow: 3px 3px 10px rgba(0,0,0,0.5);
         }
 
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -70,7 +73,7 @@
     <div id="final-screen">
         <h2 id="final-title" class="impossible-text"></h2>
         <br>
-        <p id="final-p" style="font-size: 1.3rem; color: #ffffff; font-weight: bold; text-shadow: 2px 2px 5px rgba(0,0,0,0.4);"></p>
+        <p id="final-p" style="font-size: 1.2rem; color: #ffffff; font-weight: bold; text-shadow: 2px 2px 5px rgba(0,0,0,0.4);"></p>
     </div>
 
     <script>
@@ -84,75 +87,64 @@
 
         let width, height;
         function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+            // HD Canvas Adjustment
+            const ratio = window.devicePixelRatio || 1;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * ratio;
+            canvas.height = height * ratio;
+            ctx.scale(ratio, ratio);
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // --- FIXED GRAVITY LOGIC ---
         let gravityX = 0;
-        let gravityY = 2; // Default Fall Speed
+        let gravityY = 2;
 
         if (window.DeviceOrientationEvent) {
             window.addEventListener('deviceorientation', (event) => {
-                // If sensor data is null, use defaults to prevent freezing
-                gravityX = (event.gamma || 0) / 8;
-                let tiltY = (event.beta || 0) / 8;
-                
-                // Ensure gravityY is at least 1.5 so it never stops falling
-                gravityY = Math.max(1.5, tiltY);
+                gravityX = (event.gamma || 0) / 7;
+                gravityY = Math.max(1.8, (event.beta || 0) / 7);
             });
         }
 
-        // --- IMPROVED ANIMATED HAHA ---
         let hahaArray = [];
         class AnimatedHaha {
-            constructor() {
-                this.init(true);
-            }
-            init(isFirstLoad = false) {
+            constructor() { this.init(true); }
+            init(isFirst = false) {
                 this.x = Math.random() * width;
-                // If it's the first time, spread them across the screen; otherwise, start at top
-                this.y = isFirstLoad ? Math.random() * height : -50;
-                this.size = Math.random() * 15 + 20;
-                this.speedBase = Math.random() * 2 + 1;
+                this.y = isFirst ? Math.random() * height : -50;
+                this.size = 24; // Fixed sharp size
+                this.speed = Math.random() * 1.5 + 1;
                 this.angle = Math.random() * Math.PI * 2;
-                this.spin = Math.random() * 0.04 - 0.02; // Sway speed
+                this.spin = Math.random() * 0.04 - 0.02;
             }
             update() {
-                this.y += this.speedBase + (gravityY * 0.5);
-                this.x += gravityX * 0.8;
+                this.y += this.speed + (gravityY * 0.4);
+                this.x += gravityX * 0.6;
                 this.angle += this.spin;
-
-                // Infinite Respawn
-                if (this.y > height + 60) this.init();
-                
-                // Screen wrapping for X axis
-                if (this.x > width + 60) this.x = -50;
-                if (this.x < -60) this.x = width + 50;
+                if (this.y > height + 50) this.init();
+                if (this.x > width + 50) this.x = -40;
+                if (this.x < -50) this.x = width + 40;
             }
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle);
-                ctx.font = `${this.size}px Arial`;
+                ctx.font = `bold ${this.size}px Arial`;
                 ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
                 ctx.fillText("😂", 0, 0);
                 ctx.restore();
             }
         }
 
-        // Create 35 constant emojis
-        for (let i = 0; i < 35; i++) hahaArray.push(new AnimatedHaha());
+        for (let i = 0; i < 30; i++) hahaArray.push(new AnimatedHaha());
 
-        // --- BUBBLE TRAIL ---
         let bubbles = [];
         class Bubble {
             constructor(x, y) {
                 this.x = x; this.y = y;
-                this.radius = Math.random() * 6 + 2;
+                this.radius = Math.random() * 4 + 2;
                 this.vx = (Math.random() - 0.5) * 4;
                 this.vy = (Math.random() - 0.5) * 4;
                 this.alpha = 1;
@@ -169,25 +161,19 @@
         const handleInput = (e) => {
             const x = e.clientX || (e.touches && e.touches[0].clientX);
             const y = e.clientY || (e.touches && e.touches[0].clientY);
-            if(x && y) {
-                for(let i=0; i<2; i++) bubbles.push(new Bubble(x, y));
-            }
+            if(x && y) for(let i=0; i<2; i++) bubbles.push(new Bubble(x, y));
         };
         window.addEventListener('mousemove', handleInput);
         window.addEventListener('touchmove', handleInput);
 
-        // --- 11 PUNCH LOGIC ---
         let clickCount = 0;
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             clickCount++;
             if (clickCount < 11) {
-                const x = Math.random() * (width - 120) + 20;
-                let y;
-                // Avoid the center text area height (roughly 40% to 60% of screen)
-                if(Math.random() > 0.5) y = Math.random() * (height * 0.25) + 20; // Top
-                else y = (Math.random() * (height * 0.2)) + (height * 0.75); // Bottom
-
+                const bW = 180; const bH = 60;
+                const x = Math.random() * (width - bW - 40) + 20;
+                let y = (Math.random() > 0.5) ? Math.random() * (height * 0.2) + 20 : (Math.random() * (height * 0.15)) + (height * 0.78);
                 btn.style.left = x + 'px';
                 btn.style.top = y + 'px';
                 btn.style.transform = 'none';
@@ -198,15 +184,8 @@
         });
 
         function typeWriter(text, element, speed = 60) {
-            element.innerHTML = "";
-            let i = 0;
-            function type() {
-                if (i < text.length) {
-                    element.innerHTML += text.charAt(i);
-                    i++;
-                    setTimeout(type, speed);
-                }
-            }
+            element.innerHTML = ""; let i = 0;
+            function type() { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(type, speed); } }
             type();
         }
 
@@ -215,18 +194,15 @@
             document.getElementById('content-box').style.display = 'none';
             flash.style.opacity = '1';
             setTimeout(() => {
-                let opacity = 1;
+                let op = 1;
                 let timer = setInterval(() => {
-                    if (opacity <= 0) {
+                    if (op <= 0) {
                         clearInterval(timer);
                         finalScreen.style.display = 'block';
                         typeWriter("UNPOSSIBLE IS MORE IMPOSSIBLE THAN IMPOSSIBLE", document.getElementById('final-title'));
-                        setTimeout(() => {
-                            typeWriter("Apni etimoddhe bisser sobcheye voyonkor INFORMATION ti peyesen! 💀", document.getElementById('final-p'));
-                        }, 3000);
+                        setTimeout(() => { typeWriter("Apni etimoddhe bisser sobcheye voyonkor INFORMATION ti peyesen! 💀", document.getElementById('final-p')); }, 3000);
                     }
-                    flash.style.opacity = opacity;
-                    opacity -= 0.05;
+                    flash.style.opacity = op; op -= 0.05;
                 }, 50);
             }, 800);
         }
@@ -234,10 +210,7 @@
         function animate() {
             ctx.clearRect(0, 0, width, height);
             hahaArray.forEach(h => { h.update(); h.draw(); });
-            bubbles.forEach((b, i) => {
-                b.update(); b.draw();
-                if(b.alpha <= 0) bubbles.splice(i, 1);
-            });
+            bubbles.forEach((b, i) => { b.update(); b.draw(); if(b.alpha <= 0) bubbles.splice(i, 1); });
             requestAnimationFrame(animate);
         }
         animate();
