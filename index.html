@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CAUTION: Truth Only! ⚠️</title>
     <style>
+        /* Prevents all scrolling and weird highlights */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -12,23 +13,17 @@
             font-family: 'Arial', sans-serif;
             background: #FFD700;
             display: flex; justify-content: center; align-items: center;
-            position: fixed; /* Prevents bounce scroll on iOS */
+            position: fixed;
         }
 
-        /* Centered Content Box */
         #content-box {
-            text-align: center;
-            padding: 15px;
-            z-index: 10;
-            width: 95%;
-            pointer-events: none;
+            text-align: center; padding: 20px; z-index: 10; width: 95%; pointer-events: none;
         }
 
         h1 {
-            color: #ffffff; font-size: 1.6rem; /* Optimized for mobile */
+            color: #ffffff; font-size: 1.7rem;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
-            font-weight: 900; margin-bottom: 12px;
-            line-height: 1.3;
+            font-weight: 900; margin-bottom: 15px;
         }
 
         #sub-title {
@@ -37,15 +32,16 @@
             min-height: 60px;
         }
 
-        /* Button Styling - Bigger for mobile touch */
+        /* STRICT FIXED BUTTON SIZE */
         #prank-btn {
-            padding: 18px 40px; font-size: 1.3rem; font-weight: bold;
+            width: 170px; height: 55px; /* Fixed size to stop resizing */
+            font-size: 1.1rem; font-weight: bold;
             background-color: #000; color: #FFD700;
             border: none; border-radius: 50px;
             cursor: pointer; position: absolute;
             z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex; justify-content: center; align-items: center;
             touch-action: manipulation;
-            transition: transform 0.05s;
         }
 
         #flash-bang {
@@ -53,22 +49,15 @@
             background: white; opacity: 0; pointer-events: none; z-index: 1000;
         }
 
-        #final-screen {
-            display: none; text-align: center; z-index: 11; padding: 25px;
-        }
+        #final-screen { display: none; text-align: center; z-index: 11; padding: 25px; }
 
         .impossible-text {
             font-size: 1.8rem; color: #ffffff; font-weight: 900;
-            text-shadow: 3px 3px 10px rgba(0,0,0,0.5); line-height: 1.2;
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.5);
         }
 
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
-
-        /* Media Query for very small phones */
-        @media (max-width: 360px) {
-            h1 { font-size: 1.4rem; }
-            #prank-btn { padding: 15px 30px; font-size: 1.1rem; }
-        }
+        /* Canvas for HD display */
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -98,12 +87,19 @@
         const flash = document.getElementById('flash-bang');
         const finalScreen = document.getElementById('final-screen');
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        let width, height;
+
+        // HD Canvas Setup
+        function resize() {
+            const ratio = window.devicePixelRatio || 1;
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * ratio;
+            canvas.height = height * ratio;
+            ctx.scale(ratio, ratio);
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', resize);
+        resize();
 
         let clickCount = 0;
         const messages = [
@@ -127,34 +123,37 @@
             type();
         }
 
+        // Falling Emoji Logic
         let hahaArray = [];
         class Haha {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * -canvas.height;
-                this.size = Math.random() * 15 + 15;
+            constructor() { this.init(true); }
+            init(first = false) {
+                this.x = Math.random() * width;
+                this.y = first ? Math.random() * -height : -40;
+                this.size = 22; // Smaller size for phone
                 this.speed = Math.random() * 1.5 + 1;
             }
             update() {
                 this.y += this.speed;
-                if (this.y > canvas.height) this.y = -20;
+                if (this.y > height + 40) this.init();
             }
             draw() {
-                ctx.font = this.size + "px Arial";
+                ctx.font = `${this.size}px Arial`;
                 ctx.fillText("😂", this.x, this.y);
             }
         }
 
+        // Touch Bubble Logic
         let bubbles = [];
         class Bubble {
             constructor(x, y) {
                 this.x = x; this.y = y;
                 this.radius = Math.random() * 5 + 2;
-                this.speedX = (Math.random() - 0.5) * 3;
-                this.speedY = (Math.random() - 0.5) * 3;
+                this.speedX = (Math.random() - 0.5) * 4;
+                this.speedY = (Math.random() - 0.5) * 4;
                 this.alpha = 1;
             }
-            update() { this.x += this.speedX; this.y += this.speedY; this.alpha -= 0.03; }
+            update() { this.x += this.speedX; this.y += this.speedY; this.alpha -= 0.04; }
             draw() {
                 ctx.save(); ctx.globalAlpha = this.alpha;
                 ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5;
@@ -163,39 +162,35 @@
             }
         }
 
-        for (let i = 0; i < 20; i++) hahaArray.push(new Haha());
+        for (let i = 0; i < 25; i++) hahaArray.push(new Haha());
 
         const handleMove = (e) => {
-            const x = e.clientX || e.touches[0].clientX;
-            const y = e.clientY || e.touches[0].clientY;
-            for(let i=0; i<2; i++) bubbles.push(new Bubble(x, y));
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            if(x && y) for(let i=0; i<2; i++) bubbles.push(new Bubble(x, y));
         };
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('touchmove', handleMove);
 
+        // Fixed Jump Logic
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             clickCount++;
             if (clickCount < 11) {
-                // Safe Jump logic for mobile: Keep away from center text
-                const btnWidth = btn.offsetWidth;
-                const btnHeight = btn.offsetHeight;
-                const x = Math.random() * (window.innerWidth - btnWidth - 40) + 20;
+                const bW = 170; const bH = 55;
+                // Keep button within safe screen boundaries (40px padding)
+                const x = Math.random() * (width - bW - 80) + 40;
                 let y;
-                
-                // Randomly top 25% or bottom 25% to avoid center text
-                if(Math.random() > 0.5) {
-                    y = Math.random() * (window.innerHeight * 0.2) + 20; 
-                } else {
-                    y = (Math.random() * (window.innerHeight * 0.2)) + (window.innerHeight * 0.75);
-                }
+                // Top or Bottom jump to avoid middle text
+                if(Math.random() > 0.5) y = Math.random() * (height * 0.2) + 20; 
+                else y = (Math.random() * (height * 0.15)) + (height * 0.8);
                 
                 btn.style.left = x + 'px';
                 btn.style.top = y + 'px';
                 btn.style.transform = 'none';
                 
                 title.innerText = "Target Miss! 🎯";
-                subTitle.innerText = messages[clickCount - 1] || "Aro jore punch!";
+                subTitle.innerText = messages[clickCount - 1] || "Punch lagao!";
             } else {
                 startFlashBang();
             }
@@ -205,7 +200,6 @@
             btn.style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
             flash.style.opacity = '1';
-            
             setTimeout(() => {
                 let opacity = 1;
                 let timer = setInterval(() => {
@@ -224,12 +218,9 @@
         }
 
         function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, width, height);
             hahaArray.forEach(h => { h.update(); h.draw(); });
-            bubbles.forEach((b, i) => {
-                b.update(); b.draw();
-                if(b.alpha <= 0) bubbles.splice(i, 1);
-            });
+            bubbles.forEach((b, i) => { b.update(); b.draw(); if(b.alpha <= 0) bubbles.splice(i, 1); });
             requestAnimationFrame(animate);
         }
         animate();
