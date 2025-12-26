@@ -12,17 +12,23 @@
             font-family: 'Arial', sans-serif;
             background: #FFD700;
             display: flex; justify-content: center; align-items: center;
-            position: fixed; touch-action: none;
+            position: fixed; /* Prevents bounce scroll on iOS */
         }
 
+        /* Centered Content Box */
         #content-box {
-            text-align: center; padding: 20px; z-index: 10; width: 95%; pointer-events: none;
+            text-align: center;
+            padding: 15px;
+            z-index: 10;
+            width: 95%;
+            pointer-events: none;
         }
 
         h1 {
-            color: #ffffff; font-size: 1.7rem;
+            color: #ffffff; font-size: 1.6rem; /* Optimized for mobile */
             text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
-            font-weight: 900; margin-bottom: 15px;
+            font-weight: 900; margin-bottom: 12px;
+            line-height: 1.3;
         }
 
         #sub-title {
@@ -31,16 +37,15 @@
             min-height: 60px;
         }
 
-        /* STRICT FIXED BUTTON SIZE */
+        /* Button Styling - Bigger for mobile touch */
         #prank-btn {
-            width: 180px; height: 60px; /* Fixed dimensions */
-            font-size: 1.2rem; font-weight: bold;
+            padding: 18px 40px; font-size: 1.3rem; font-weight: bold;
             background-color: #000; color: #FFD700;
             border: none; border-radius: 50px;
             cursor: pointer; position: absolute;
             z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            display: flex; justify-content: center; align-items: center;
             touch-action: manipulation;
+            transition: transform 0.05s;
         }
 
         #flash-bang {
@@ -48,14 +53,22 @@
             background: white; opacity: 0; pointer-events: none; z-index: 1000;
         }
 
-        #final-screen { display: none; text-align: center; z-index: 11; padding: 25px; }
+        #final-screen {
+            display: none; text-align: center; z-index: 11; padding: 25px;
+        }
 
         .impossible-text {
             font-size: 1.8rem; color: #ffffff; font-weight: 900;
-            text-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.5); line-height: 1.2;
         }
 
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+        /* Media Query for very small phones */
+        @media (max-width: 360px) {
+            h1 { font-size: 1.4rem; }
+            #prank-btn { padding: 15px 30px; font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
@@ -68,7 +81,7 @@
         <p id="sub-title">Dangerous kisu janar sahos thakle Punch kor! 😎</p>
     </div>
 
-    <button id="prank-btn" style="bottom: 20%; left: 50%; transform: translateX(-50%);">PUNCH ME 👊</button>
+    <button id="prank-btn" style="bottom: 15%; left: 50%; transform: translateX(-50%);">PUNCH ME 👊</button>
 
     <div id="final-screen">
         <h2 id="final-title" class="impossible-text"></h2>
@@ -85,132 +98,138 @@
         const flash = document.getElementById('flash-bang');
         const finalScreen = document.getElementById('final-screen');
 
-        let width, height;
-        function resize() {
-            // HD Canvas Adjustment
-            const ratio = window.devicePixelRatio || 1;
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width * ratio;
-            canvas.height = height * ratio;
-            ctx.scale(ratio, ratio);
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
-        window.addEventListener('resize', resize);
-        resize();
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        let gravityX = 0;
-        let gravityY = 2;
+        let clickCount = 0;
+        const messages = [
+            "Ki holo? Eto slow? 🙄", "Miss! Miss! 😂", 
+            "Sahos thakle touch koro! 🔥", "Apu, finger ki pishla?", 
+            "Target thik koro!", "Eto kache tobuo parcho na?", 
+            "Try harder! 😎", "Hahaha! Har manbi?", 
+            "Ar matro koyekta!", "Eibar last Punch!"
+        ];
 
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', (event) => {
-                gravityX = (event.gamma || 0) / 7;
-                gravityY = Math.max(1.8, (event.beta || 0) / 7);
-            });
+        function typeWriter(text, element, speed = 50) {
+            element.innerHTML = "";
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
         }
 
         let hahaArray = [];
-        class AnimatedHaha {
-            constructor() { this.init(true); }
-            init(isFirst = false) {
-                this.x = Math.random() * width;
-                this.y = isFirst ? Math.random() * height : -50;
-                this.size = 24; // Fixed sharp size
+        class Haha {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * -canvas.height;
+                this.size = Math.random() * 15 + 15;
                 this.speed = Math.random() * 1.5 + 1;
-                this.angle = Math.random() * Math.PI * 2;
-                this.spin = Math.random() * 0.04 - 0.02;
             }
             update() {
-                this.y += this.speed + (gravityY * 0.4);
-                this.x += gravityX * 0.6;
-                this.angle += this.spin;
-                if (this.y > height + 50) this.init();
-                if (this.x > width + 50) this.x = -40;
-                if (this.x < -50) this.x = width + 40;
+                this.y += this.speed;
+                if (this.y > canvas.height) this.y = -20;
             }
             draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.angle);
-                ctx.font = `bold ${this.size}px Arial`;
-                ctx.textAlign = "center";
-                ctx.fillText("😂", 0, 0);
-                ctx.restore();
+                ctx.font = this.size + "px Arial";
+                ctx.fillText("😂", this.x, this.y);
             }
         }
-
-        for (let i = 0; i < 30; i++) hahaArray.push(new AnimatedHaha());
 
         let bubbles = [];
         class Bubble {
             constructor(x, y) {
                 this.x = x; this.y = y;
-                this.radius = Math.random() * 4 + 2;
-                this.vx = (Math.random() - 0.5) * 4;
-                this.vy = (Math.random() - 0.5) * 4;
+                this.radius = Math.random() * 5 + 2;
+                this.speedX = (Math.random() - 0.5) * 3;
+                this.speedY = (Math.random() - 0.5) * 3;
                 this.alpha = 1;
             }
-            update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.04; }
+            update() { this.x += this.speedX; this.y += this.speedY; this.alpha -= 0.03; }
             draw() {
                 ctx.save(); ctx.globalAlpha = this.alpha;
-                ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5;
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.stroke(); ctx.restore();
             }
         }
 
-        const handleInput = (e) => {
-            const x = e.clientX || (e.touches && e.touches[0].clientX);
-            const y = e.clientY || (e.touches && e.touches[0].clientY);
-            if(x && y) for(let i=0; i<2; i++) bubbles.push(new Bubble(x, y));
-        };
-        window.addEventListener('mousemove', handleInput);
-        window.addEventListener('touchmove', handleInput);
+        for (let i = 0; i < 20; i++) hahaArray.push(new Haha());
 
-        let clickCount = 0;
+        const handleMove = (e) => {
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+            for(let i=0; i<2; i++) bubbles.push(new Bubble(x, y));
+        };
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('touchmove', handleMove);
+
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             clickCount++;
             if (clickCount < 11) {
-                const bW = 180; const bH = 60;
-                const x = Math.random() * (width - bW - 40) + 20;
-                let y = (Math.random() > 0.5) ? Math.random() * (height * 0.2) + 20 : (Math.random() * (height * 0.15)) + (height * 0.78);
+                // Safe Jump logic for mobile: Keep away from center text
+                const btnWidth = btn.offsetWidth;
+                const btnHeight = btn.offsetHeight;
+                const x = Math.random() * (window.innerWidth - btnWidth - 40) + 20;
+                let y;
+                
+                // Randomly top 25% or bottom 25% to avoid center text
+                if(Math.random() > 0.5) {
+                    y = Math.random() * (window.innerHeight * 0.2) + 20; 
+                } else {
+                    y = (Math.random() * (window.innerHeight * 0.2)) + (window.innerHeight * 0.75);
+                }
+                
                 btn.style.left = x + 'px';
                 btn.style.top = y + 'px';
                 btn.style.transform = 'none';
+                
                 title.innerText = "Target Miss! 🎯";
+                subTitle.innerText = messages[clickCount - 1] || "Aro jore punch!";
             } else {
                 startFlashBang();
             }
         });
 
-        function typeWriter(text, element, speed = 60) {
-            element.innerHTML = ""; let i = 0;
-            function type() { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(type, speed); } }
-            type();
-        }
-
         function startFlashBang() {
             btn.style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
             flash.style.opacity = '1';
+            
             setTimeout(() => {
-                let op = 1;
+                let opacity = 1;
                 let timer = setInterval(() => {
-                    if (op <= 0) {
+                    if (opacity <= 0) {
                         clearInterval(timer);
                         finalScreen.style.display = 'block';
-                        typeWriter("UNPOSSIBLE IS MORE IMPOSSIBLE THAN IMPOSSIBLE", document.getElementById('final-title'));
-                        setTimeout(() => { typeWriter("Apni etimoddhe bisser sobcheye voyonkor INFORMATION ti peyesen! 💀", document.getElementById('final-p')); }, 3000);
+                        typeWriter("UNPOSSIBLE IS MORE IMPOSSIBLE THAN IMPOSSIBLE", document.getElementById('final-title'), 60);
+                        setTimeout(() => {
+                            typeWriter("Apni etimoddhe bisser sobcheye voyonkor INFORMATION ti peyesen! 💀", document.getElementById('final-p'), 50);
+                        }, 3000);
                     }
-                    flash.style.opacity = op; op -= 0.05;
+                    flash.style.opacity = opacity;
+                    opacity -= 0.05;
                 }, 50);
             }, 800);
         }
 
         function animate() {
-            ctx.clearRect(0, 0, width, height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             hahaArray.forEach(h => { h.update(); h.draw(); });
-            bubbles.forEach((b, i) => { b.update(); b.draw(); if(b.alpha <= 0) bubbles.splice(i, 1); });
+            bubbles.forEach((b, i) => {
+                b.update(); b.draw();
+                if(b.alpha <= 0) bubbles.splice(i, 1);
+            });
             requestAnimationFrame(animate);
         }
         animate();
